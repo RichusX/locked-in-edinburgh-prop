@@ -1,4 +1,4 @@
 # LockedInEdinburgh
 Theatrical Bomb for "Locked In Edinburgh" 
 
-&copy Ritvars Timermanis
+© Ritvars Timermanis 2015
