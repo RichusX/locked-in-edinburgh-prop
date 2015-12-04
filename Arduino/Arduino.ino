@@ -1,3 +1,8 @@
+// Ritvars Timermanis
+//    04/12/2015
+//    Arduino.ino
+// "Locked In Edinburgh" 
+
 #include <LiquidCrystal.h>
 #include <string.h>
 LiquidCrystal lcd(7, 8, 9, 10, 11, 12);
@@ -12,6 +17,8 @@ bool buttonPressed = true;
 bool doCountdown = false;
 bool countdownDone = false;
 unsigned long lastCount = 0;
+
+int siren = 24; //Siren pin
 
 const int hoursX =    0; // start hours
 const int minutesX =  10; //start min
@@ -33,7 +40,7 @@ bool wireState[10];
 bool wireLastState[10] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
 void setup() {
-  /*Serial.begin(9600);
+  Serial.begin(9600);
 
   //Enable the pullup resistor & set wire pins as input
   for (unsigned int i = 0; i < sizeof(wire); i++){
@@ -54,9 +61,9 @@ void setup() {
   lcd.clear();
 
   //Check if all wires are connected
-  //wiretest();
-*/
-  pinMode(24, OUTPUT);
+  wiretest();
+
+  pinMode(siren, OUTPUT);
 }
 
 void loop() {
@@ -65,12 +72,12 @@ void loop() {
   digitalWrite(24, LOW);
   delay(1000);
 
-  /*if (previousErrorCount != errorCount){
+  if (previousErrorCount != errorCount){
     digitalWrite(errorLED[errorCount], HIGH);
     previousErrorCount = errorCount;
-  }*/
+  }
 
-  /*for (unsigned int i = 0; i < sizeof(wireState); i++){
+  for (unsigned int i = 0; i < sizeof(wireState); i++){
       wireState[i] = digitalRead(wirePin[i]);
       /*Serial.print("Wire: ");
       Serial.print(wire[i]);
@@ -78,7 +85,7 @@ void loop() {
       Serial.print(wireState[i]);
       Serial.println("");*/
 
-    /*  if ((wireState[i] == HIGH) && (wireState[i] != wireLastState[i])){
+      if ((wireState[i] == HIGH) && (wireState[i] != wireLastState[i])){
         wireLastState[i] = wireState[i];
         wiresCut++;
         wireChanged(wirePin[i]);
@@ -125,7 +132,7 @@ void loop() {
 
   if (errorCount == 5){
     boom();
-  }*/
+  }
 }
 
 bool countdown(){
