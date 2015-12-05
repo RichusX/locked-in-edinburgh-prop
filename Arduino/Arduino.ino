@@ -21,17 +21,17 @@ unsigned long lastCount = 0;
 int siren = 24; //Siren pin
 
 const int hoursX =    0; // start hours
-const int minutesX =  10; //start min
-const int secondsX =  0; //start seconds
+const int minutesX =  0; //start min
+const int secondsX =  10; //start seconds
 int hours = hoursX;
 int minutes = minutesX;
 int seconds = secondsX;
 
 const int errorLED[5] = {31, 33, 35, 37, 39};
 
-//const int R = 4; //Red
-//const int G = 3; //Green
-//const int B = 2; //Blue
+const int R = 4; //Red
+const int G = 3; //Green
+const int B = 2; //Blue
 
 const int defuseOrder[10] = {36, 46, 30, 40, 34, 32, 48, 38, 44, 42}; // Yellow > White > Brown > Blue > Orange > Red > Black > Green > Grey > Purple
 int errorCount = 0;
@@ -42,7 +42,7 @@ const char* wire[] = {"wire_BROWN", "wire_RED", "wire_ORANGE", "wire_YELLOW", "w
 const int wirePin[] = {30, 32, 34, 36, 38, 40, 42, 44, 46, 48};
 bool wireState[10];
 bool wireLastState[10] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-
+bool boomed = false;
 void setup() {
   Serial.begin(9600);
 
@@ -52,9 +52,9 @@ void setup() {
   }
 
   //Set RGB LED pins to OUTPUT
-//  analogWrite(R, 255);
-//  analogWrite(G, 255);
-//  analogWrite(B, 255);
+  analogWrite(R, 255);
+  analogWrite(G, 255);
+  analogWrite(B, 255);
 
   //Set error LED pins to OUTPUT
   for (unsigned int a = 0; a < sizeof(errorLED); a++){
@@ -105,45 +105,45 @@ void loop() {
     case 5: digitalWrite(errorLED[4], HIGH); break;
     case 6: boom(); break;
     default: break;}
+  if (!boomed){
+    buttonState = digitalRead(openSwitch);
+      if (buttonState != lastButtonState) {
+        if (buttonState == HIGH && ARMED && testPassed) {
+          if (!doCountdown) {
+            //Set RGB LED to Yellow
+            analogWrite(R, 0);
+            analogWrite(G, 0);
 
-  buttonState = digitalRead(openSwitch);
-    if (buttonState != lastButtonState) {
-      if (buttonState == HIGH && ARMED && testPassed) {
-        if (!doCountdown) {
-          //Set RGB LED to Yellow
-          //analogWrite(R, 0);
-          //analogWrite(G, 0);
-
-          doCountdown = true;
-          countdownDone = false;
-          lastCount = millis() - 1000;
-          hours = hoursX;
-          minutes = minutesX;
-          seconds = secondsX;
+            doCountdown = true;
+            countdownDone = false;
+            lastCount = millis() - 1000;
+            hours = hoursX;
+            minutes = minutesX;
+            seconds = secondsX;
+          }
+        } else if (buttonState == HIGH && !ARMED){
+          ARMED = true;
         }
-      } else if (buttonState == HIGH && !ARMED){
-        ARMED = true;
+        delay(50); // Delay a little bit to avoid bouncing
       }
-      delay(50); // Delay a little bit to avoid bouncing
-    }
-  lastButtonState = buttonState;
+    lastButtonState = buttonState;
 
-  if (doCountdown) { //Start the countdown
-    if (!countdownDone && millis() - lastCount >= 1000) {
-      bool done = countdown();
-      if (done) {
-        boom();
-        countdownDone = true;
+    if (doCountdown) { //Start the countdown
+      if (!countdownDone && millis() - lastCount >= 1000) {
+        bool done = countdown();
+        if (done) {
+          boom();
+          countdownDone = true;
+        }
+        lastCount = millis();
       }
-      lastCount = millis();
     }
-  }
 
-  if (errorCount == 5){
-    boom();
+    if (errorCount == 5){
+      boom();
+    }
   }
 }
-
 bool countdown(){
   lcd.setCursor(0,0);
   lcd.print("Status: ACTIVE");
@@ -198,8 +198,13 @@ void wireChanged(int x){
 
 bool boom(){
   lcd.clear();
+  boomed = true;
   doCountdown = false;
   countdownDone = true;
+
+  digitalWrite(R, LOW);
+  digitalWrite(G, HIGH);
+  digitalWrite(B, HIGH);
 
   digitalWrite(siren, HIGH);
 
