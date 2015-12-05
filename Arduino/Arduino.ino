@@ -1,7 +1,7 @@
 // Ritvars Timermanis
 //    04/12/2015
 //    Arduino.ino
-// "Locked In Edinburgh" 
+// "Locked In Edinburgh"
 
 #include <LiquidCrystal.h>
 #include <string.h>
@@ -29,6 +29,10 @@ int seconds = secondsX;
 
 const int errorLED[5] = {31, 33, 35, 37, 39};
 
+//const int R = 4; //Red
+//const int G = 3; //Green
+//const int B = 2; //Blue
+
 const int defuseOrder[10] = {36, 46, 30, 40, 34, 32, 48, 38, 44, 42}; // Yellow > White > Brown > Blue > Orange > Red > Black > Green > Grey > Purple
 int errorCount = 0;
 int previousErrorCount = 0;
@@ -47,6 +51,11 @@ void setup() {
       pinMode(wirePin[i], INPUT_PULLUP);
   }
 
+  //Set RGB LED pins to OUTPUT
+//  analogWrite(R, 255);
+//  analogWrite(G, 255);
+//  analogWrite(B, 255);
+
   //Set error LED pins to OUTPUT
   for (unsigned int a = 0; a < sizeof(errorLED); a++){
       pinMode(errorLED[a], OUTPUT);
@@ -63,17 +72,14 @@ void setup() {
   //Check if all wires are connected
   wiretest();
 
+  int errorCount = 0;
   pinMode(siren, OUTPUT);
 }
 
 void loop() {
-  digitalWrite(24, HIGH);
-  delay(1000);
-  digitalWrite(24, LOW);
-  delay(1000);
-
+  //Serial.println(wiresCut);
   if (previousErrorCount != errorCount){
-    digitalWrite(errorLED[errorCount], HIGH);
+    //digitalWrite(errorLED[errorCount], HIGH);
     previousErrorCount = errorCount;
   }
 
@@ -85,7 +91,7 @@ void loop() {
       Serial.print(wireState[i]);
       Serial.println("");*/
 
-      if ((wireState[i] == HIGH) && (wireState[i] != wireLastState[i])){
+      if ((wireState[i] == 1) && (wireState[i] != wireLastState[i])){
         wireLastState[i] = wireState[i];
         wiresCut++;
         wireChanged(wirePin[i]);
@@ -93,11 +99,11 @@ void loop() {
   }
 
   switch(errorCount){
-    case 1: digitalWrite(errorLED[0], HIGH); break;
-    case 2: digitalWrite(errorLED[1], HIGH); break;
-    case 3: digitalWrite(errorLED[2], HIGH); break;
-    case 4: digitalWrite(errorLED[3], HIGH); break;
-    case 5: digitalWrite(errorLED[4], HIGH); break;
+    case 1: digitalWrite(errorLED[0], HIGH); Serial.println("ERROR LED: 1"); break;
+    case 2: digitalWrite(errorLED[1], HIGH); Serial.println("ERROR LED: 2"); break;
+    case 3: digitalWrite(errorLED[2], HIGH); Serial.println("ERROR LED: 3"); break;
+    case 4: digitalWrite(errorLED[3], HIGH); Serial.println("ERROR LED: 4"); break;
+    case 5: digitalWrite(errorLED[4], HIGH); Serial.println("ERROR LED: 5"); break;
     case 6: boom(); break;
     default: break;}
 
@@ -105,6 +111,10 @@ void loop() {
     if (buttonState != lastButtonState) {
       if (buttonState == HIGH && ARMED && testPassed) {
         if (!doCountdown) {
+          //Set RGB LED to Yellow
+          //analogWrite(R, 0);
+          //analogWrite(G, 0);
+
           doCountdown = true;
           countdownDone = false;
           lastCount = millis() - 1000;
@@ -170,7 +180,7 @@ bool countdown(){
 }
 
 void wireChanged(int x){
-  if (x != defuseOrder[wiresCut]){
+  if (x != defuseOrder[wiresCut-1]){
     errorCount++;
     Serial.print("ERROR: ");
     Serial.print(errorCount);
@@ -183,10 +193,7 @@ bool boom(){
   doCountdown = false;
   countdownDone = true;
 
-  for (unsigned int a = 0; a < sizeof(errorLED); a++){
-    digitalWrite(errorLED[a], 1);
-    delay(200);
-  }
+  digitalWrite(siren, HIGH);
 
   for (unsigned int x = 0; x < 16; x++){
     lcd.setCursor(x, 0);
