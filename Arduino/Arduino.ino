@@ -7,6 +7,8 @@
 #include <string.h>
 LiquidCrystal lcd(7, 8, 9, 10, 11, 12);
 
+#define ARRAYSIZE(arr) (sizeof(arr)/sizeof(arr[0]))
+
 const int openSwitch = 53;
 int buttonState = 0;         // current state of the button
 int lastButtonState = 0;     // previous state of the button
@@ -21,8 +23,8 @@ unsigned long lastCount = 0;
 int siren = 24; //Siren pin
 
 const int hoursX =    0; // start hours
-const int minutesX =  0; //start min
-const int secondsX =  10; //start seconds
+const int minutesX =  10; //start min
+const int secondsX =  0; //start seconds
 int hours = hoursX;
 int minutes = minutesX;
 int seconds = secondsX;
@@ -39,16 +41,22 @@ int previousErrorCount = 0;
 int wiresCut = 0;
 
 const char* wire[] = {"wire_BROWN", "wire_RED", "wire_ORANGE", "wire_YELLOW", "wire_GREEN", "wire_BLUE", "wire_PURPLE", "wire_GREY", "wire_WHITE", "wire_BLACK"};
-const int wirePin[] = {30, 32, 34, 36, 38, 40, 42, 44, 46, 48};
 bool wireState[10];
 bool wireLastState[10] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 bool boomed = false;
+
+int expectedWire = 0;
+
 void setup() {
   Serial.begin(9600);
+  Serial.print("Size of wire: ");
+  Serial.println(ARRAYSIZE(wire));
+  Serial.print("Size of wireState: ");
+  Serial.println(ARRAYSIZE(wireState));
 
   //Enable the pullup resistor & set wire pins as input
-  for (unsigned int i = 0; i < sizeof(wire); i++){
-      pinMode(wirePin[i], INPUT_PULLUP);
+  for (unsigned int i = 0; i < ARRAYSIZE(wireState); i++){
+      pinMode(defuseOrder[i], INPUT_PULLUP);
   }
 
   //Set RGB LED pins to OUTPUT
@@ -57,7 +65,7 @@ void setup() {
   analogWrite(B, 255);
 
   //Set error LED pins to OUTPUT
-  for (unsigned int a = 0; a < sizeof(errorLED); a++){
+  for (unsigned int a = 0; a < ARRAYSIZE(errorLED); a++){
       pinMode(errorLED[a], OUTPUT);
       digitalWrite(errorLED[a], LOW);
   }
@@ -82,29 +90,28 @@ void loop() {
     previousErrorCount = errorCount;
   }
 
-  for (unsigned int i = 0; i < sizeof(wireState); i++){
-      wireState[i] = digitalRead(wirePin[i]);
-      /*Serial.print("Wire: ");
-      Serial.print(wire[i]);
-      Serial.print(" State: ");
-      Serial.print(wireState[i]);
-      Serial.println("");*/
+  for (unsigned int i = 0; i < ARRAYSIZE(wireState); i++){
+    if (i == expectedWire)
+      continue;
 
-      if ((wireState[i] == 1) && (wireState[i] != wireLastState[i])){
-        wireLastState[i] = wireState[i];
-        wiresCut++;
-        wireChanged(wirePin[i]);
-      }
+    wireState[i] = digitalRead(defuseOrder[i]);
+
+    if ((wireState[i] == 1) && (wireState[i] != wireLastState[i])){
+      Serial.print("Error wire changed: ");
+      Serial.println(i);
+      wireLastState[i] = wireState[i];
+      wiresCut++;
+      errorCount++;
+      Serial.println(errorCount);
+    }
   }
 
-  switch(errorCount){
-    case 1: digitalWrite(errorLED[0], HIGH); break;
-    case 2: digitalWrite(errorLED[1], HIGH); break;
-    case 3: digitalWrite(errorLED[2], HIGH); break;
-    case 4: digitalWrite(errorLED[3], HIGH); break;
-    case 5: digitalWrite(errorLED[4], HIGH); break;
-    case 6: boom(); break;
-    default: break;}
+  for (int i = 0; i < ARRAYSIZE(errorLED); i++) {
+    if (i < errorCount) {
+      digitalWrite(errorLED[i], HIGH);
+    }
+  }
+
   if (!boomed){
     buttonState = digitalRead(openSwitch);
       if (buttonState != lastButtonState) {
@@ -139,9 +146,22 @@ void loop() {
       }
     }
 
-    if (errorCount == 5){
+    if (errorCount >= 5){
       boom();
     }
+  }
+
+  wireState[expectedWire] = digitalRead(defuseOrder[expectedWire]);
+  if ((wireState[expectedWire] == 1) && (wireState[expectedWire] != wireLastState[expectedWire])){
+    wireLastState[expectedWire] = wireState[expectedWire];
+    Serial.println("Expected wire changed");
+    do {
+      expectedWire++;
+      Serial.println(expectedWire);
+      if (expectedWire >= 10) {
+        defused();
+      }
+    } while(wireState[expectedWire]);
   }
 }
 bool countdown(){
@@ -178,29 +198,11 @@ bool countdown(){
   return false;
 }
 
-void wireChanged(int x){
-  int nextInOrder = wiresCut - 1;
-  if (errorCount > 0) {
-    if (x == nextInOrder){
-      nextInOrder = wiresCut - errorCount;
-    } else {
-      nextInOrder = wiresCut - 1 - errorCount;
-    }
-  }
-
-  if (x != defuseOrder[nextInOrder]){
-    errorCount++;
-    Serial.print("ERROR: ");
-    Serial.print(errorCount);
-    Serial.println(" ");
-  }
-}
-
 bool boom(){
   lcd.clear();
   boomed = true;
   doCountdown = false;
-  countdownDone = true;
+
 
   digitalWrite(R, LOW);
   digitalWrite(G, HIGH);
@@ -218,6 +220,14 @@ bool boom(){
     lcd.print("#");
     delay(100);
   }
+
+  while (1);
+}
+
+void defused(){
+  lcd.clear();
+  lcd.print("SUCCESS");
+  while (1);
 }
 
 void wiretest(){
@@ -226,8 +236,8 @@ void wiretest(){
   const char* result[] = {"FAIL", "PASS"};
 
   //Read the current state of wire pins and store them in wireState
-  for (unsigned int x = 0; x < sizeof(wirePin); x++){
-    wireState[x] = digitalRead(wirePin[x]);
+  for (unsigned int x = 0; x < ARRAYSIZE(defuseOrder); x++){
+    wireState[x] = digitalRead(defuseOrder[x]);
   }
 
   //Check if all wires are connected (LOW)
@@ -242,12 +252,13 @@ void wiretest(){
       wireState[8] == LOW &&
       wireState[9] == LOW ){
         lcd.print(result[1]);
-        delay(3000);
+        delay(1000);
         lcd.clear();
         lcd.print("Status: ARMED");
         testPassed = true;
   } else {
     lcd.print(result[0]); //If wire/s not connected display fail message
     testPassed = false;
+    while (1);
   }
 }
