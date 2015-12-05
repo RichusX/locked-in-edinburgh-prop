@@ -34,6 +34,7 @@ const int errorLED[5] = {31, 33, 35, 37, 39};
 //const int B = 2; //Blue
 
 const int defuseOrder[10] = {36, 46, 30, 40, 34, 32, 48, 38, 44, 42}; // Yellow > White > Brown > Blue > Orange > Red > Black > Green > Grey > Purple
+int errorCount = 0;
 int previousErrorCount = 0;
 int wiresCut = 0;
 
@@ -71,7 +72,6 @@ void setup() {
   //Check if all wires are connected
   wiretest();
 
-  int errorCount = 0;
   pinMode(siren, OUTPUT);
 }
 
@@ -179,7 +179,16 @@ bool countdown(){
 }
 
 void wireChanged(int x){
-  if (x != defuseOrder[wiresCut-1]){
+  int nextInOrder = wiresCut - 1;
+  if (errorCount > 0) {
+    if (x == nextInOrder){
+      nextInOrder = wiresCut - errorCount;
+    } else {
+      nextInOrder = wiresCut - 1 - errorCount;
+    }
+  }
+
+  if (x != defuseOrder[nextInOrder]){
     errorCount++;
     Serial.print("ERROR: ");
     Serial.print(errorCount);
