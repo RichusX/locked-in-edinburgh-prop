@@ -1,4 +1,4 @@
-// Ritvars Timermanis
+// Developed by Ritvars Timermanis & Mike Walters
 //    04/12/2015
 //    Arduino.ino
 // "Locked In Edinburgh"
