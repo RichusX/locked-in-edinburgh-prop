@@ -225,9 +225,52 @@ bool boom(){
 }
 
 void defused(){
-  lcd.clear();
-  lcd.print("SUCCESS");
-  while (1);
+
+  digitalWrite(R, HIGH);
+  digitalWrite(G, LOW);
+  digitalWrite(B, HIGH);
+
+
+
+  bool xy = false;
+    while (1){
+      lcd.setCursor(4,2);
+      (hours < 10) ? lcd.print("0") : NULL;
+      lcd.print(hours);
+      lcd.print(":");
+      (minutes < 10) ? lcd.print("0") : NULL;
+      lcd.print(minutes);
+      lcd.print(":");
+      (seconds < 10) ? lcd.print("0") : NULL;
+      lcd.print(seconds);
+
+      if (!xy){
+        Serial.println("1");
+        lcd.setCursor(0,0);
+        lcd.print("Status: DEFUSED");
+        delay(1000);
+        xy = true;
+      }
+      else {
+        Serial.println("2");
+        lcd.clear();
+        lcd.setCursor(0,0);
+        lcd.print("Status:");
+
+        lcd.setCursor(4,2);
+        (hours < 10) ? lcd.print("0") : NULL;
+        lcd.print(hours);
+        lcd.print(":");
+        (minutes < 10) ? lcd.print("0") : NULL;
+        lcd.print(minutes);
+        lcd.print(":");
+        (seconds < 10) ? lcd.print("0") : NULL;
+        lcd.print(seconds);
+
+        delay(1000);
+        xy = false;
+      }
+    }
 }
 
 void wiretest(){
