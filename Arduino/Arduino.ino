@@ -1,7 +1,8 @@
-// Developed by Ritvars Timermanis & Mike Walters
-//    04/12/2015
-//    Arduino.ino
-// "Locked In Edinburgh"
+// Developed by Ritvars Timermanis
+//        04/12/2015
+//        Arduino.ino
+//    "Locked In Edinburgh"
+// Special thanks to Mike Walters
 
 #include <LiquidCrystal.h>
 #include <string.h>
@@ -48,21 +49,19 @@ bool boomed = false;
 int expectedWire = 0;
 
 void setup() {
-  Serial.begin(9600);
-  Serial.print("Size of wire: ");
-  Serial.println(ARRAYSIZE(wire));
-  Serial.print("Size of wireState: ");
-  Serial.println(ARRAYSIZE(wireState));
+  //Serial.begin(9600);
 
-  //Enable the pullup resistor & set wire pins as input
+  //Enable the internal pullup resistor & set wire pins as input
   for (unsigned int i = 0; i < ARRAYSIZE(wireState); i++){
       pinMode(defuseOrder[i], INPUT_PULLUP);
   }
 
   //Set RGB LED pins to OUTPUT
-  analogWrite(R, 255);
-  analogWrite(G, 255);
-  analogWrite(B, 255);
+  pinMode(R, OUTPUT);
+  pinMode(G, OUTPUT);
+  pinMode(B, OUTPUT);
+
+  rgbLED(0); //RGB LED off
 
   //Set error LED pins to OUTPUT
   for (unsigned int a = 0; a < ARRAYSIZE(errorLED); a++){
@@ -84,9 +83,7 @@ void setup() {
 }
 
 void loop() {
-  //Serial.println(wiresCut);
   if (previousErrorCount != errorCount){
-    //digitalWrite(errorLED[errorCount], HIGH);
     previousErrorCount = errorCount;
   }
 
@@ -97,12 +94,9 @@ void loop() {
     wireState[i] = digitalRead(defuseOrder[i]);
 
     if ((wireState[i] == 1) && (wireState[i] != wireLastState[i])){
-      Serial.print("Error wire changed: ");
-      Serial.println(i);
       wireLastState[i] = wireState[i];
       wiresCut++;
       errorCount++;
-      Serial.println(errorCount);
     }
   }
 
@@ -118,8 +112,7 @@ void loop() {
         if (buttonState == HIGH && ARMED && testPassed) {
           if (!doCountdown) {
             //Set RGB LED to Yellow
-            analogWrite(R, 0);
-            analogWrite(G, 0);
+            rgbLED(4);
 
             doCountdown = true;
             countdownDone = false;
@@ -154,10 +147,8 @@ void loop() {
   wireState[expectedWire] = digitalRead(defuseOrder[expectedWire]);
   if ((wireState[expectedWire] == 1) && (wireState[expectedWire] != wireLastState[expectedWire])){
     wireLastState[expectedWire] = wireState[expectedWire];
-    Serial.println("Expected wire changed");
     do {
       expectedWire++;
-      Serial.println(expectedWire);
       if (expectedWire >= 10) {
         defused();
       }
@@ -203,10 +194,7 @@ bool boom(){
   boomed = true;
   doCountdown = false;
 
-
-  digitalWrite(R, LOW);
-  digitalWrite(G, HIGH);
-  digitalWrite(B, HIGH);
+  rgbLED(1);
 
   digitalWrite(siren, HIGH);
 
@@ -225,12 +213,9 @@ bool boom(){
 }
 
 void defused(){
-
   digitalWrite(R, HIGH);
   digitalWrite(G, LOW);
   digitalWrite(B, HIGH);
-
-
 
   bool xy = false;
     while (1){
@@ -245,14 +230,12 @@ void defused(){
       lcd.print(seconds);
 
       if (!xy){
-        Serial.println("1");
         lcd.setCursor(0,0);
         lcd.print("Status: DEFUSED");
         delay(1000);
         xy = true;
       }
       else {
-        Serial.println("2");
         lcd.clear();
         lcd.setCursor(0,0);
         lcd.print("Status:");
@@ -271,6 +254,35 @@ void defused(){
         xy = false;
       }
     }
+}
+
+void rgbLED(int ledColour){
+  switch (ledColour){
+    case 0:   digitalWrite(R, HIGH);  //Off
+              digitalWrite(G, HIGH);
+              digitalWrite(B, HIGH);
+              break;
+    case 1:   digitalWrite(R, LOW);   //Red
+              digitalWrite(G, HIGH);
+              digitalWrite(B, HIGH);
+              break;
+    case 2:   digitalWrite(R, HIGH);  //Green
+              digitalWrite(G, LOW);
+              digitalWrite(B, HIGH);
+              break;
+    case 3:   digitalWrite(R, HIGH);  //Blue
+              digitalWrite(G, HIGH);
+              digitalWrite(B, LOW);
+              break;
+    case 4:   digitalWrite(R, LOW);   //Yellow
+              digitalWrite(G, LOW);
+              digitalWrite(B, HIGH);
+              break;
+    default:  digitalWrite(R, LOW);  //All on
+              digitalWrite(G, LOW);
+              digitalWrite(B, LOW);
+              break;
+  }
 }
 
 void wiretest(){
@@ -300,7 +312,7 @@ void wiretest(){
         lcd.print("Status: ARMED");
         testPassed = true;
   } else {
-    lcd.print(result[0]); //If wire/s not connected display fail message
+    lcd.print(result[0]); //If wires aren't connected display fail message
     testPassed = false;
     while (1);
   }
