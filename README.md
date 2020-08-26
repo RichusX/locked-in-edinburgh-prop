@@ -1,4 +1,2 @@
-# LockedInEdinburgh
-Theatrical Bomb for "Locked In Edinburgh" 
-
-Developed by Ritvars Timermanis
+# Locked in Edinburgh
+Arduino code for a theatrical bomb created for "Locked In Edinburgh" 
